@@ -1,0 +1,9 @@
+using PwdManager.Core.Security;
+
+namespace PwdManager.App.Forms;
+
+/// <summary>Implemented by the role shells so the login form can hand over the session.</summary>
+public interface IShellForm
+{
+    void Attach(SessionContext session);
+}

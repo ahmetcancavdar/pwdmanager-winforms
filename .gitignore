@@ -1,0 +1,18 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+publish/
+*.user
+
+# Local runtime config (contains DB connection details, DPAPI-protected)
+appsettings.local.json
+
+# First-run marker / local state
+*.local.state
+
+# IDE
+.vs/
+.idea/
+*.suo
