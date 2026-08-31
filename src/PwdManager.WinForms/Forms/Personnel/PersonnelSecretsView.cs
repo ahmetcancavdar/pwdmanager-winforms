@@ -1,8 +1,7 @@
 using Guna.UI2.WinForms;
 using PwdManager.WinForms.Theme;
-using PwdManager.WinForms.Controls;
-using PwdManager.Application.Security;
-using PwdManager.Application.DTOs;
+using PwdManager.Domain.Security;
+using PwdManager.Application.Models;
 
 namespace PwdManager.WinForms.Forms.Personnel;
 

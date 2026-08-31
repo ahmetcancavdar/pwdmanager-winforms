@@ -1,5 +1,5 @@
 using PwdManager.WinForms.Theme;
-using PwdManager.Application.Security;
+using PwdManager.Domain.Security;
 using WinFormsApp = System.Windows.Forms.Application;
 
 namespace PwdManager.WinForms.Forms;

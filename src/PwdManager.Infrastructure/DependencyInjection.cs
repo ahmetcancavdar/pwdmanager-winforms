@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PwdManager.Application.Configuration;
 using PwdManager.Application.Interfaces;
+using PwdManager.Domain.Security;
 using PwdManager.Infrastructure.Configuration;
 using PwdManager.Infrastructure.Persistence;
 using PwdManager.Infrastructure.Repositories;

@@ -1,4 +1,4 @@
-using PwdManager.Application.Interfaces;
+using PwdManager.Domain.Security;
 
 namespace PwdManager.Infrastructure.Security;
 

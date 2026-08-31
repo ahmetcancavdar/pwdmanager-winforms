@@ -1,5 +1,5 @@
 using PwdManager.WinForms.Theme;
-using PwdManager.Domain.Entities;
+using PwdManager.Application.Models;
 
 namespace PwdManager.WinForms.Forms.Admin;
 

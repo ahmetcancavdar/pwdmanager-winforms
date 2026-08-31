@@ -2,8 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PwdManager.Application.Services;
 using PwdManager.WinForms.Theme;
 using PwdManager.Domain.Enums;
-using PwdManager.Application.DTOs;
-using PwdManager.Application.Security;
+using PwdManager.Domain.Security;
 
 namespace PwdManager.WinForms.Forms;
 
@@ -46,13 +45,13 @@ public sealed partial class LoginForm : Form
             var outcome = await _auth.LoginAsync(_username.Text, _password.Text);
             switch (outcome.Status)
             {
-                case LoginStatus.Success:
+                case AuthService.LoginStatus.Success:
                     await OnLoggedInAsync(outcome.Session!);
                     break;
-                case LoginStatus.LockedOut:
+                case AuthService.LoginStatus.LockedOut:
                     SetStatus($"Hesap kilitli. {outcome.LockedUntil:HH:mm}'e kadar deneyemezsiniz.", error: true);
                     break;
-                case LoginStatus.Inactive:
+                case AuthService.LoginStatus.Inactive:
                     SetStatus("Bu hesap devre dışı bırakılmış.", error: true);
                     break;
                 default:

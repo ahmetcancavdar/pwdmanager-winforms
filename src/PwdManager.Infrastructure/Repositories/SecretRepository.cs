@@ -1,9 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PwdManager.Application.Interfaces;
-using PwdManager.Application.DTOs;
-using PwdManager.Domain.Entities;
+using PwdManager.Application.Models;
 using PwdManager.Infrastructure.Persistence;
-using PwdManager.Infrastructure.Persistence.Entities;
 
 namespace PwdManager.Infrastructure.Repositories;
 
@@ -73,7 +71,7 @@ public sealed class SecretRepository : ISecretRepository
     public async Task<long> CreateAsync(NewSecret secret, CancellationToken ct = default)
     {
         await using var db = await _factory.CreateDbContextAsync(ct);
-        var e = new Secret
+        var e = new Entities.Secret
         {
             CategoryId = secret.CategoryId,
             Title = secret.Title,

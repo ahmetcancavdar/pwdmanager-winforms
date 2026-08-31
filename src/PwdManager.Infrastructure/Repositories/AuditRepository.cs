@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PwdManager.Application.Interfaces;
-using PwdManager.Domain.Entities;
+using PwdManager.Application.Models;
 using PwdManager.Infrastructure.Persistence;
-using PwdManager.Infrastructure.Persistence.Entities;
 
 namespace PwdManager.Infrastructure.Repositories;
 
@@ -16,7 +15,7 @@ public sealed class AuditRepository : IAuditRepository
         string targetType = "", long? targetId = null, string detail = "", CancellationToken ct = default)
     {
         await using var db = await _factory.CreateDbContextAsync(ct);
-        db.AuditLogs.Add(new AuditLog
+        db.AuditLogs.Add(new Entities.AuditLog
         {
             Action = action,
             UserId = userId,

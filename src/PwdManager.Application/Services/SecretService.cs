@@ -1,7 +1,6 @@
 using PwdManager.Application.Interfaces;
-using PwdManager.Application.DTOs;
 using PwdManager.Application.Models;
-using PwdManager.Application.Security;
+using PwdManager.Domain.Security;
 
 namespace PwdManager.Application.Services;
 

@@ -13,10 +13,10 @@ Katmanlı (Clean Architecture) — bağımlılık yönü tek yönlü:
 
 | Proje | Sorumluluk |
 |-------|-----------|
-| `PwdManager.Domain` | Saf domain: `Entities/` (`UserRecord`, `CategoryRecord`, `SecretRecord`, `AuditRecord` — repoların döndürdüğü değişmez tipler), `Enums/` (`UserRole`), `Exceptions/` (`DomainException`, `NotAuthorizedException`), `ValueObjects/` (yer tutucu). DB/EF/WinForms/DI yok — hiçbir şeye referans vermez. |
-| `PwdManager.Application` | `Services/` (Auth/Category/Secret/Personnel/Permission/Trash/Setup use-case'leri), `Interfaces/Repositories/` (repo arayüzleri, dosya başına bir tane), `Interfaces/Security/` (kriptografi soyutlamaları — `IPasswordHasher`, `IKeyDerivation`, `IDataProtector`, `IRecoveryCodeService`), `DTOs/{Auth,Secrets,Personnel}` (istek/yanıt tipleri + `LoginStatus`/`LoginOutcome`), `Security/` (`SessionContext`, `SecretProtector`, `AuthenticatedUser`), `Configuration/AppConfig.cs`, `AddApplication`. EF Core'a bağımlı değildir; Infrastructure'ı tanımaz. |
-| `PwdManager.Infrastructure` | **EF Core (Database First)** — `Sql/schema.sql` veritabanını tanımlar; `Persistence/Entities/` + `Persistence/PwdManagerContext` bu şemadan `dotnet ef dbcontext scaffold` ile üretilir. `Repositories/` Application arayüzlerini uygular ve EF entity ↔ Domain record eşlemesi yapar (`Mappers.cs`); `Security/` Argon2id/AES-GCM somut sınıfları; `Configuration/` DPAPI'li `ConfigStore` + `DatabaseBootstrapper`; `AddInfrastructure`. |
-| `PwdManager.WinForms`  | `Forms/{Admin,Personnel}`, yeniden kullanılabilir `Controls/` (`SecretRowControl`), `Theme/`, bileşim kökü `Composition/DependencyInjection.cs` (`AddApplication` + `AddInfrastructure` birleştirir + `Bootstrap`/`AppBootstrapper`), `Program.cs`. Formlar yalnızca Application/Domain tiplerini görür; EF entity görmez. |
+| `PwdManager.Domain` | Saf kurallar ve modeller: `SessionContext` / `SecretProtector` oturum bağlamı, `UserRole`, kriptografi **soyutlamaları** (`IPasswordHasher`, `IKeyDerivation`, `IDataProtector`, `IRecoveryCodeService`). DB/EF/WinForms yok. |
+| `PwdManager.Application` | Use-case servisleri (`Services/` — Auth/Category/Secret/Personnel/Permission/Trash/Setup), repository **arayüzleri** (`Interfaces/Repositories.cs`), DTO/record'lar (`Models/Records.cs`), yapılandırma modeli (`Configuration/AppConfig.cs`), `AddApplication`. EF Core'a bağımlı değildir. |
+| `PwdManager.Infrastructure` | **EF Core (Database First)** — `Sql/schema.sql` veritabanını tanımlar; `Entities/` + `Persistence/PwdManagerContext` bu şemadan `dotnet ef dbcontext scaffold` ile üretilir. `Repositories/` Application arayüzlerini uygular ve EF entity ↔ record eşlemesi yapar (`Mappers.cs`); `Security/` Argon2id/AES-GCM somut sınıfları; `Configuration/` DPAPI'li `ConfigStore` + `DatabaseBootstrapper`; `AddInfrastructure`. |
+| `PwdManager.WinForms`  | WinForms arayüz, koyu tema yöneticisi, bileşim kökü (`Composition/` — `AppServices` katman DI uzantılarını birleştirir), kurulum sihirbazı. Formlar yalnızca Application tiplerini/record'larını görür; EF entity görmez. |
 
 ### Veri katmanı — Database First akışı
 
@@ -26,9 +26,8 @@ Katmanlı (Clean Architecture) — bağımlılık yönü tek yönlü:
    ```bash
    dotnet ef dbcontext scaffold "Server=127.0.0.1;Port=3306;Database=pwdmanager;User Id=root;Password=" \
      Pomelo.EntityFrameworkCore.MySql --context PwdManagerContext \
-     --context-dir Persistence --output-dir Persistence/Entities \
-     --namespace PwdManager.Infrastructure.Persistence.Entities \
-     --context-namespace PwdManager.Infrastructure.Persistence \
+     --context-dir Persistence --output-dir Entities \
+     --namespace PwdManager.Infrastructure.Entities --context-namespace PwdManager.Infrastructure.Persistence \
      --no-onconfiguring --force
    ```
 

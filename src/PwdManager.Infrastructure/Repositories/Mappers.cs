@@ -1,6 +1,6 @@
-using PwdManager.Domain.Entities;
+using PwdManager.Application.Models;
 using PwdManager.Domain.Enums;
-using PwdManager.Infrastructure.Persistence.Entities;
+using PwdManager.Infrastructure.Entities;
 
 namespace PwdManager.Infrastructure.Repositories;
 
