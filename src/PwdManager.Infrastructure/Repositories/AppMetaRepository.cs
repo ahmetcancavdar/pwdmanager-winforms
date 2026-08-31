@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PwdManager.Application.Interfaces;
 using PwdManager.Infrastructure.Persistence;
+using PwdManager.Infrastructure.Persistence.Entities;
 
 namespace PwdManager.Infrastructure.Repositories;
 
@@ -24,7 +25,7 @@ public sealed class AppMetaRepository : IAppMetaRepository
         await using var db = await _factory.CreateDbContextAsync(ct);
         var row = await db.AppMeta.FirstOrDefaultAsync(m => m.MetaKey == key, ct);
         if (row is null)
-            db.AppMeta.Add(new Entities.AppMetum { MetaKey = key, MetaValue = value });
+            db.AppMeta.Add(new AppMetum { MetaKey = key, MetaValue = value });
         else
             row.MetaValue = value;
         await db.SaveChangesAsync(ct);

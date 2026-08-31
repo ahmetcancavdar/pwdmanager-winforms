@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using PwdManager.Infrastructure.Entities;
+using PwdManager.Infrastructure.Persistence.Entities;
 
 namespace PwdManager.Infrastructure.Persistence;
 

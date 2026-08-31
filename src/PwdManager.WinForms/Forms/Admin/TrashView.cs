@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using PwdManager.Application.Services;
 using PwdManager.WinForms.Theme;
-using PwdManager.Domain.Security;
+using PwdManager.Application.Security;
 
 namespace PwdManager.WinForms.Forms.Admin;
 

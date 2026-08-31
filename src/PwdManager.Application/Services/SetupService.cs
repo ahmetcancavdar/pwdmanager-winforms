@@ -1,9 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
 using PwdManager.Application.Interfaces;
-using PwdManager.Application.Models;
+using PwdManager.Application.DTOs;
 using PwdManager.Domain.Enums;
-using PwdManager.Domain.Security;
+using PwdManager.Application.Security;
 
 namespace PwdManager.Application.Services;
 

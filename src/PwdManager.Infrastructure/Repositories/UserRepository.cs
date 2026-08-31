@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PwdManager.Application.Interfaces;
-using PwdManager.Application.Models;
-using PwdManager.Infrastructure.Entities;
+using PwdManager.Application.DTOs;
+using PwdManager.Domain.Entities;
+using PwdManager.Infrastructure.Persistence.Entities;
 using PwdManager.Infrastructure.Persistence;
 
 namespace PwdManager.Infrastructure.Repositories;

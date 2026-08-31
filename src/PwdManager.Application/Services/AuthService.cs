@@ -1,7 +1,8 @@
 using System.Security.Cryptography;
 using PwdManager.Application.Configuration;
+using PwdManager.Application.DTOs;
 using PwdManager.Application.Interfaces;
-using PwdManager.Domain.Security;
+using PwdManager.Application.Security;
 
 namespace PwdManager.Application.Services;
 
@@ -34,10 +35,6 @@ public sealed class AuthService
         _crypto = crypto;
         _dummyHash = hasher.Hash("timing-equalizer-not-a-real-password");
     }
-
-    public enum LoginStatus { Success, InvalidCredentials, Inactive, LockedOut }
-
-    public sealed record LoginOutcome(LoginStatus Status, SessionContext? Session, DateTime? LockedUntil);
 
     public async Task<LoginOutcome> LoginAsync(string username, string password, CancellationToken ct = default)
     {

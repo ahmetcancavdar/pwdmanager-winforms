@@ -1,5 +1,5 @@
 using PwdManager.Application.Interfaces;
-using PwdManager.Domain.Security;
+using PwdManager.Application.Security;
 
 namespace PwdManager.Application.Services;
 

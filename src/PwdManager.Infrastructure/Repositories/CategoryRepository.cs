@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PwdManager.Application.Interfaces;
-using PwdManager.Application.Models;
+using PwdManager.Domain.Entities;
 using PwdManager.Infrastructure.Persistence;
+using PwdManager.Infrastructure.Persistence.Entities;
 
 namespace PwdManager.Infrastructure.Repositories;
 
@@ -44,7 +45,7 @@ public sealed class CategoryRepository : ICategoryRepository
     public async Task<long> CreateAsync(string name, string description, long createdBy, CancellationToken ct = default)
     {
         await using var db = await _factory.CreateDbContextAsync(ct);
-        var category = new Entities.Category { Name = name, Description = description, CreatedBy = createdBy };
+        var category = new Category { Name = name, Description = description, CreatedBy = createdBy };
         db.Categories.Add(category);
         await db.SaveChangesAsync(ct);
         return category.Id;
