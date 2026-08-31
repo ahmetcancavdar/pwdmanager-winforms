@@ -1,27 +1,33 @@
 # PwdManager — Kurumsal Şifre Yönetimi
 
-Windows masaüstü (WinForms / .NET 8), koyu tema (Guna.UI2.WinForms), MySQL.
+Windows masaüstü (WinForms / .NET 8), koyu tema (Guna.UI2.WinForms), **MySQL/MariaDB**.
 İki rol: **Admin** ve **Personel**. Parolalar istemci tarafında **AES-256-GCM** ile
 şifrelenir; veritabanına düz metin hiçbir zaman yazılmaz.
 
 ## Çözüm yapısı
 
+Katmanlı (Clean Architecture) — bağımlılık yönü tek yönlü:
+`WinForms → Application → Domain` ve `Infrastructure → Application (+ Domain)`.
+**Application, Infrastructure'ı tanımaz**; **WinForms doğrudan veri katmanını bilmez**
+(EF/Pomelo/DPAPI yalnızca Infrastructure ve WinForms'un bileşim kökünde adlandırılır).
+
 | Proje | Sorumluluk |
 |-------|-----------|
-| `PwdManager.Core` | Kriptografi (Argon2id KDF, AES-256-GCM zarf şifreleme, kurtarma kodu), oturum bağlamı. Veritabanından bağımsız. |
-| `PwdManager.Data` | **EF Core (Database First)** — `Sql/schema.sql` veritabanını tanımlar; `Entities/` + `Persistence/PwdManagerContext` bu şemadan `dotnet ef dbcontext scaffold` ile üretilir. `Repositories/` bu context üzerine yazılır (Pomelo + MariaDB). |
-| `PwdManager.App`  | WinForms arayüz, koyu tema yöneticisi, DI bileşimi, kurulum sihirbazı |
+| `PwdManager.Domain` | Saf kurallar ve modeller: `SessionContext` / `SecretProtector` oturum bağlamı, `UserRole`, kriptografi **soyutlamaları** (`IPasswordHasher`, `IKeyDerivation`, `IDataProtector`, `IRecoveryCodeService`). DB/EF/WinForms yok. |
+| `PwdManager.Application` | Use-case servisleri (`Services/` — Auth/Category/Secret/Personnel/Permission/Trash/Setup), repository **arayüzleri** (`Interfaces/Repositories.cs`), DTO/record'lar (`Models/Records.cs`), yapılandırma modeli (`Configuration/AppConfig.cs`), `AddApplication`. EF Core'a bağımlı değildir. |
+| `PwdManager.Infrastructure` | **EF Core (Database First)** — `Sql/schema.sql` veritabanını tanımlar; `Entities/` + `Persistence/PwdManagerContext` bu şemadan `dotnet ef dbcontext scaffold` ile üretilir. `Repositories/` Application arayüzlerini uygular ve EF entity ↔ record eşlemesi yapar (`Mappers.cs`); `Security/` Argon2id/AES-GCM somut sınıfları; `Configuration/` DPAPI'li `ConfigStore` + `DatabaseBootstrapper`; `AddInfrastructure`. |
+| `PwdManager.WinForms`  | WinForms arayüz, koyu tema yöneticisi, bileşim kökü (`Composition/` — `AppServices` katman DI uzantılarını birleştirir), kurulum sihirbazı. Formlar yalnızca Application tiplerini/record'larını görür; EF entity görmez. |
 
 ### Veri katmanı — Database First akışı
 
 1. `Sql/schema.sql` tek doğ­ru kaynaktır; şema değişince önce burası güncellenir ve MariaDB'ye uygulanır.
-2. Entity/DbContext yeniden üretimi (`src/PwdManager.Data` dizininden):
+2. Entity/DbContext yeniden üretimi (`src/PwdManager.Infrastructure` dizininden):
 
    ```bash
    dotnet ef dbcontext scaffold "Server=127.0.0.1;Port=3306;Database=pwdmanager;User Id=root;Password=" \
      Pomelo.EntityFrameworkCore.MySql --context PwdManagerContext \
      --context-dir Persistence --output-dir Entities \
-     --namespace PwdManager.Data.Entities --context-namespace PwdManager.Data.Persistence \
+     --namespace PwdManager.Infrastructure.Entities --context-namespace PwdManager.Infrastructure.Persistence \
      --no-onconfiguring --force
    ```
 
@@ -54,11 +60,18 @@ bağımsız bir kopyasını sarar; tüm admin parolaları kaybolursa sistemi kur
 ## Roller
 
 ### Admin
-- Parola ve kategori üzerinde tam CRUD (ekle / düzenle / sil)
+- Parola ve kategori üzerinde tam CRUD. **Silme = soft delete**: kayıt DB'de kalır,
+  arayüzden gizlenir; admin **Silinenler** sekmesinden geri yükleyebilir veya kalıcı
+  silebilir. Etkin görünürlük = `secrets.deleted_at IS NULL AND categories.deleted_at IS NULL`;
+  soft-silinen bir şey personele görünmez ve reveal edilemez (`ListVisibleSecrets` +
+  `CanViewSecret` filtreli). Personel bu sekmeyi hiç görmez.
 - Personel hesabı oluşturma, parola sıfırlama, **Aktif/Pasif**: pasifleştirilen personelin
   açık oturumu ~2 sn içinde kapanır (giriş ekranına "Hesabınız devre dışı bırakıldı" ile döner)
   ve yeni giriş yapamaz
-- Yetkilendirme: kategori bazında **veya** kategori içinde tek tek parola bazında
+- Yetkilendirme: kategori bazında **veya** kategori içinde tek tek parola bazında.
+  Verili bir kategoride bir şifrenin kutusu kaldırılırsa **istisna (deny)** oluşur —
+  kategori verili kalır ama o şifre o personelden gizlenir. Kategoriyi yeniden vermek
+  istisnaları temizler. Etkin erişim = *(kategori verili ∪ şifre verili) ∧ ¬istisna*.
 - Yetki/şifre/kategori değişiklikleri personelin listesine ~2 sn içinde yansır
 
 ### Personel
@@ -71,21 +84,25 @@ bağımsız bir kopyasını sarar; tüm admin parolaları kaybolursa sistemi kur
   erişimi kaldırır **veya** personeli pasifleştirirse parola ~1 sn içinde gizlenir
 - Başarısız yeniden-doğrulama denemeleri `audit_log`'a `REVEAL_AUTH_FAILED` olarak yazılır
 
-**Personel hesapları yalnızca admin tarafından açılır** ([PersonnelService](src/PwdManager.App/Services/PersonnelService.cs) `RequireAdmin`). Kendi kendine kayıt ekranı yoktur; giriş ekranı sadece kimlik doğrular.
+**Personel hesapları yalnızca admin tarafından açılır** ([PersonnelService](src/PwdManager.Application/Services/PersonnelService.cs) → `SessionContext.EnsureAdmin()`). Kendi kendine kayıt ekranı yoktur; giriş ekranı sadece kimlik doğrular.
 
 ## Arayüz
 
 > **Her form ve UserControl iki dosyalıdır:** `X.Designer.cs` (yerleşim — Visual Studio
 > tasarımcısında açılır ve sürükle-bırak ile düzenlenir; her sınıfın tasarımcı için
 > parametresiz kurucusu vardır) + `X.cs` (olaylar, DI, iş mantığı). Koyu tema çalışma
-> anında [`ThemeManager.Apply`](src/PwdManager.App/Theme/ThemeManager.cs) ile uygulanır
+> anında [`ThemeManager.Apply`](src/PwdManager.WinForms/Theme/ThemeManager.cs) ile uygulanır
 > (renk paleti tek kaynak). Izgara satırları / ağaç düğümleri / satır listesi gibi
 > **veriyle dolan** kısımlar kodda kalır — WinForms'ta doğru desen budur.
+>
+> Not: Guna.UI2 ücretsizdir ancak Visual Studio **tasarımcısı** ilk açılışta bir kez
+> ücretsiz lisans anahtarı ister ([guna.io](https://guna.io)). `dotnet build` / `dotnet run`
+> ve yayınlanan exe lisans gerektirmez.
 
-- [Program.cs](src/PwdManager.App/Program.cs) — iki fazlı açılış: hazır değilse [SetupWizardForm](src/PwdManager.App/Forms/SetupWizardForm.cs), sonra [LoginForm](src/PwdManager.App/Forms/LoginForm.cs)
-- [LoginForm](src/PwdManager.App/Forms/LoginForm.cs) → ilk girişte zorunlu [ChangePasswordForm](src/PwdManager.App/Forms/ChangePasswordForm.cs) → role göre shell
-- **Admin shell** ([AdminShellForm](src/PwdManager.App/Forms/AdminShellForm.cs)) — sol menü + görünümler: [Kategoriler](src/PwdManager.App/Forms/Admin/CategoriesView.cs) · [Parolalar](src/PwdManager.App/Forms/Admin/SecretsView.cs) · [Personel](src/PwdManager.App/Forms/Admin/PersonnelView.cs) · [Yetkiler](src/PwdManager.App/Forms/Admin/PermissionsView.cs) (kategori/parola ağacı, onay kutuları anlık yazar) · [Denetim](src/PwdManager.App/Forms/Admin/AuditView.cs)
-- **Personel shell** ([PersonnelShellForm](src/PwdManager.App/Forms/PersonnelShellForm.cs)) — salt okunur, **kategoriye göre gruplanmış tablo** ([PersonnelSecretsView](src/PwdManager.App/Forms/Personnel/PersonnelSecretsView.cs)): her kategori başlığı + sütun başlığı + satırlar ([SecretRowControl](src/PwdManager.App/Forms/Personnel/SecretRowControl.cs)). Erişilebilir parolası olmayan kategori hiç görünmez. Satıra çift tıkla → **satır yerinde açılır**, popup yok: giriş parolanı orada gir → şifre gösterilir → 20 sn geri sayım → maskelenir. ~15 sn'de bir yoklama, değişince yeniden çizer.
+- [Program.cs](src/PwdManager.WinForms/Program.cs) — iki fazlı açılış: hazır değilse [SetupWizardForm](src/PwdManager.WinForms/Forms/SetupWizardForm.cs), sonra [LoginForm](src/PwdManager.WinForms/Forms/LoginForm.cs)
+- [LoginForm](src/PwdManager.WinForms/Forms/LoginForm.cs) → ilk girişte zorunlu [ChangePasswordForm](src/PwdManager.WinForms/Forms/ChangePasswordForm.cs) → role göre shell
+- **Admin shell** ([AdminShellForm](src/PwdManager.WinForms/Forms/AdminShellForm.cs)) — sol menü + görünümler: [Kategoriler](src/PwdManager.WinForms/Forms/Admin/CategoriesView.cs) · [Parolalar](src/PwdManager.WinForms/Forms/Admin/SecretsView.cs) · [Personel](src/PwdManager.WinForms/Forms/Admin/PersonnelView.cs) · [Yetkiler](src/PwdManager.WinForms/Forms/Admin/PermissionsView.cs) (kategori/parola ağacı, onay kutuları anlık yazar) · [Denetim](src/PwdManager.WinForms/Forms/Admin/AuditView.cs)
+- **Personel shell** ([PersonnelShellForm](src/PwdManager.WinForms/Forms/PersonnelShellForm.cs)) — salt okunur, **kategoriye göre gruplanmış tablo** ([PersonnelSecretsView](src/PwdManager.WinForms/Forms/Personnel/PersonnelSecretsView.cs)): her kategori başlığı + sütun başlığı + satırlar ([SecretRowControl](src/PwdManager.WinForms/Forms/Personnel/SecretRowControl.cs)). Erişilebilir parolası olmayan kategori hiç görünmez. Satıra çift tıkla → **satır yerinde açılır**, popup yok: giriş parolanı orada gir → şifre gösterilir → 20 sn geri sayım → maskelenir. ~2 sn'de bir yoklama, görünen küme değişince yeniden çizer.
 
 ## Güvenlik önlemleri
 
@@ -96,19 +113,20 @@ bağımsız bir kopyasını sarar; tüm admin parolaları kaybolursa sistemi kur
 - Başarısız girişte hesap kilidi (5 deneme → 15 dk); reveal'da 3 deneme → iptal
 - Açık parola diske/log'a yazılmaz; KEK/DEK kullanımı sonrası `CryptographicOperations.ZeroMemory`
 - `audit_log`: login, görüntüleme (+reddedilen), ekle/düzenle/sil, yetki ver/al kayıtları
-- Boşta otomatik kilit ([ShellFormBase](src/PwdManager.App/Forms/ShellFormBase.cs)): `IdleLockMinutes` (varsayılan 5) boyunca giriş yoksa shell kapanır, DEK temizlenir, giriş ekranına dönülür
+- Boşta otomatik kilit ([ShellFormBase](src/PwdManager.WinForms/Forms/ShellFormBase.cs)): `IdleLockMinutes` (varsayılan 5) boyunca giriş yoksa shell kapanır, DEK temizlenir, giriş ekranına dönülür
 - Servis katmanında `SessionContext.EnsureAdmin()` — personel oturumuyla yazma işlemi denenirse reddedilir (derinlemesine savunma)
 
 ## Geliştirme
 
-Gereksinim: .NET 8 SDK (`global.json` 8.0.419'a sabitler), MySQL 8.x.
+Gereksinim: .NET 8 SDK (`global.json` 8.0.419'a sabitler) · **MySQL 8.x veya MariaDB 10.4+**
+(geliştirmede XAMPP/MariaDB 10.4 kullanıldı; Pomelo sağlayıcısı ikisini de destekler).
 
 ```bash
 dotnet build PwdManager.sln
-dotnet run --project src/PwdManager.App
+dotnet run --project src/PwdManager.WinForms
 ```
 
-İlk çalıştırmada kurulum sihirbazı açılır: DB bağlantısını test eder, `src/PwdManager.Data/Sql/schema.sql`
+İlk çalıştırmada kurulum sihirbazı açılır: DB bağlantısını test eder, `src/PwdManager.Infrastructure/Sql/schema.sql`
 şemasını uygular, ilk admin hesabını oluşturur, DEK ve kurtarma anahtarını üretir.
 
 ## Masaüstü kısayolu ve çoklu pencere
@@ -117,7 +135,7 @@ dotnet run --project src/PwdManager.App
 powershell -ExecutionPolicy Bypass -File .\publish-and-shortcut.ps1
 ```
 
-`.\publish\PwdManager.App.exe` (tek dosya) üretir ve masaüstüne **PwdManager.lnk** kısayolu koyar.
+`.\publish\PwdManager.WinForms.exe` (tek dosya) üretir ve masaüstüne **PwdManager.lnk** kısayolu koyar.
 Kod değişince yeniden çalıştır.
 
 Uygulama **tek örnek kilidi kullanmaz**: kısayola üst üste tıklamak (veya bir pencerede

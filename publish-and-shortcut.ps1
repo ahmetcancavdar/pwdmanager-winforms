@@ -4,10 +4,10 @@
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $publishDir = Join-Path $root 'publish'
-$exe = Join-Path $publishDir 'PwdManager.App.exe'
+$exe = Join-Path $publishDir 'PwdManager.WinForms.exe'
 
 Write-Host 'Publishing...' -ForegroundColor Cyan
-dotnet publish (Join-Path $root 'src/PwdManager.App') -c Release -r win-x64 `
+dotnet publish (Join-Path $root 'src/PwdManager.WinForms') -c Release -r win-x64 `
     --self-contained false -p:PublishSingleFile=true -p:DebugType=none -o $publishDir
 
 $lnk = [Environment]::GetFolderPath('Desktop') + '\PwdManager.lnk'
