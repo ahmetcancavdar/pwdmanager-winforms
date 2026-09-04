@@ -25,7 +25,13 @@ public sealed class SecurityConfig
 {
     public int IdleLockMinutes { get; set; } = 5;
     public int LoginMaxAttempts { get; set; } = 5;
+
+    /// <summary>How long an account stays locked after <see cref="LoginMaxAttempts"/> consecutive failed logins.</summary>
+    public int LockoutMinutes { get; set; } = 10;
     public int RevealMaxAttempts { get; set; } = 3;
+
+    /// <summary>How long a single secret stays reveal-locked after <see cref="RevealMaxAttempts"/> wrong re-auth attempts.</summary>
+    public int RevealLockoutMinutes { get; set; } = 5;
     public int RevealVisibleSeconds { get; set; } = 20;
     public int PermissionPollSeconds { get; set; } = 2;
 }

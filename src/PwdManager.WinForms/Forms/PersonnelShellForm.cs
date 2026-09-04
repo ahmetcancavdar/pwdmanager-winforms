@@ -43,6 +43,7 @@ public sealed partial class PersonnelShellForm : ShellFormBase
         _auth = provider.GetRequiredService<AuthService>();
         _security = provider.GetRequiredService<SecurityConfig>();
 
+        UiFactory.SetIcon(_refresh, IconFont.Refresh);
         _hint.Text = $"Liste canlı güncellenir ({_security.PermissionPollSeconds} sn). Şifreyi görmek için satıra çift tıklayın.";
         _refresh.Click += async (_, _) => await ReloadAsync(force: true);
     }

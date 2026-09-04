@@ -24,11 +24,11 @@ public sealed partial class LoginForm : Form
         _provider = provider;
 
         ThemeManager.Apply(this);
+        AppBranding.ApplyBrand(_brandDot);
         AcceptButton = _loginButton;
 
         UiFactory.AttachRevealToggle(_reveal, _password);
         _loginButton.Click += async (_, _) => await TryLoginAsync();
-        _newWindow.Click += (_, _) => ShellFormBase.LaunchNewInstance();
     }
 
     private async Task TryLoginAsync()
@@ -54,8 +54,12 @@ public sealed partial class LoginForm : Form
                 case AuthService.LoginStatus.Inactive:
                     SetStatus("Bu hesap devre dışı bırakılmış.", error: true);
                     break;
+                case AuthService.LoginStatus.InvalidCredentials when outcome.LockedUntil is { } until:
+                    // This was the attempt that just tripped the lock.
+                    SetStatus($"Çok fazla hatalı deneme. Hesabınız {until:HH:mm}'e kadar kilitlendi.", error: true);
+                    break;
                 default:
-                    SetStatus("Kullanıcı adı veya parola hatalı.", error: true);
+                    SetStatus("Kullanıcı adınız veya parolanız hatalıdır.", error: true);
                     break;
             }
         }
@@ -104,6 +108,9 @@ public sealed partial class LoginForm : Form
 
     private void SetStatus(string message, bool error = false)
     {
+        // Tasarımcıda etiket 0×0 boyutlu — metin görünmesi için AutoSize'ı burada zorluyoruz.
+        _status.AutoSize = true;
+        _status.MaximumSize = new Size(330, 0);
         _status.Text = message;
         _status.ForeColor = error ? AppPalette.Danger : AppPalette.TextSecondary;
     }

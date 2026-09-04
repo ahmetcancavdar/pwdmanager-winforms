@@ -1,3 +1,4 @@
+using PwdManager.Domain.Security;
 using PwdManager.WinForms.Theme;
 
 namespace PwdManager.WinForms.Forms.Admin;
@@ -31,6 +32,11 @@ public sealed partial class PersonnelEditorForm : Form
 
         if (isNew)
         {
+            _password.PlaceholderText = $"Geçici parola ({PasswordPolicy.Hint})";
+            _note.Text = $"{PasswordPolicy.RequirementMessage}  Personel ilk girişte bu parolayı değiştirmek zorunda kalır.";
+            _note.MaximumSize = new Size(376, 0);
+            _note.AutoSize = true;
+
             _gen.Click += (_, _) =>
             {
                 _password.Text = Generate(16);
@@ -47,11 +53,12 @@ public sealed partial class PersonnelEditorForm : Form
         else
         {
             // Editing an existing account: only the display name is editable.
-            _password.Visible = _reveal.Visible = _gen.Visible = _note.Visible = false;
-            _status.Location = new Point(32, 182);
-            _save.Location = new Point(32, 226);
-            _cancel.Location = new Point(238, 226);
-            ClientSize = new Size(440, 300);
+            _password.Visible = _reveal.Visible = _gen.Visible = _passLabel.Visible = _note.Visible = false;
+            _status.Location = new Point(29, 224);
+            _save.Location = new Point(28, 256);
+            _cancel.Location = new Point(276, 256);
+            _card.Size = new Size(412, 316);
+            ClientSize = new Size(468, 372);
         }
 
         _save.Click += (_, _) => Submit();
@@ -62,13 +69,15 @@ public sealed partial class PersonnelEditorForm : Form
     {
         if (Username.Length < 3) { Fail("Kullanıcı adı en az 3 karakter olmalı."); return; }
         if (FullName.Length == 0) { Fail("Ad soyad zorunlu."); return; }
-        if (_isNew && _password.Text.Length < 8) { Fail("Geçici parola en az 8 karakter olmalı."); return; }
+        if (_isNew && !PasswordPolicy.IsValid(_password.Text, out string pwError)) { Fail(pwError); return; }
         DialogResult = DialogResult.OK;
         Close();
     }
 
     private void Fail(string message)
     {
+        _status.AutoSize = true;
+        _status.MaximumSize = new Size(376, 0);
         _status.Text = message;
         _status.ForeColor = AppPalette.Danger;
     }

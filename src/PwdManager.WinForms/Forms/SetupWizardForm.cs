@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using PwdManager.Application.Configuration;
 using PwdManager.Application.Interfaces;
 using PwdManager.Application.Services;
+using PwdManager.Domain.Security;
 using PwdManager.WinForms.Composition;
 using PwdManager.WinForms.Theme;
 
@@ -87,7 +88,19 @@ public sealed partial class SetupWizardForm : Form
         try
         {
             SetStatus("Sunucuya bağlanılıyor…");
-            await _bootstrapper.TestConnectionAsync(db);
+            try
+            {
+                await _bootstrapper.TestConnectionAsync(db);
+            }
+            catch (Exception connEx)
+            {
+                SetStatus(
+                    $"Sunucuya ({db.Host}:{db.Port}) bağlanılamadı — MySQL/MariaDB büyük ihtimalle çalışmıyor.\n" +
+                    "XAMPP Control Panel'i açıp MySQL satırında 'Start'a basın (kalıcı çözüm için 'Service' kutusunu işaretleyin), sonra tekrar deneyin.\n" +
+                    "Ayrıntı: " + connEx.Message,
+                    error: true);
+                return;
+            }
 
             SetStatus("Şema uygulanıyor…");
             await _bootstrapper.ApplySchemaAsync(db);
@@ -121,7 +134,7 @@ public sealed partial class SetupWizardForm : Form
         string pass = _adminPass.Text;
 
         if (user.Length < 3) { SetStatus("Kullanıcı adı en az 3 karakter olmalı.", error: true); return; }
-        if (pass.Length < 10) { SetStatus("Parola en az 10 karakter olmalı.", error: true); return; }
+        if (!PasswordPolicy.IsValid(pass, out string pwError)) { SetStatus(pwError, error: true); return; }
         if (pass != _adminPass2.Text) { SetStatus("Parolalar eşleşmiyor.", error: true); return; }
 
         Busy(true);
@@ -147,6 +160,9 @@ public sealed partial class SetupWizardForm : Form
 
     private void SetStatus(string message, bool error = false)
     {
+        // Tasarımcıda etiket 0×0 boyutlu — metin görünmesi için AutoSize'ı burada zorluyoruz.
+        _activeStatus.AutoSize = true;
+        _activeStatus.MaximumSize = new Size(480, 0);
         _activeStatus.Text = message;
         _activeStatus.ForeColor = error ? AppPalette.Danger : AppPalette.TextSecondary;
     }

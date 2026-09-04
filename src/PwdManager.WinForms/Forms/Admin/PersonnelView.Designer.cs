@@ -12,67 +12,131 @@ namespace PwdManager.WinForms.Forms.Admin
 
         private void InitializeComponent()
         {
-            this._heading = new System.Windows.Forms.Label();
+            this._pageHeader = new Guna.UI2.WinForms.Guna2Panel();
+            this._title = new System.Windows.Forms.Label();
+            this._subtitle = new System.Windows.Forms.Label();
+            this._headerDivider = new Guna.UI2.WinForms.Guna2Panel();
             this._toolbar = new System.Windows.Forms.FlowLayoutPanel();
             this._add = new Guna.UI2.WinForms.Guna2Button();
             this._edit = new Guna.UI2.WinForms.Guna2Button();
             this._toggle = new Guna.UI2.WinForms.Guna2Button();
             this._reset = new Guna.UI2.WinForms.Guna2Button();
-            this._gridHost = new System.Windows.Forms.Panel();
+            this._card = new Guna.UI2.WinForms.Guna2Panel();
             this._grid = new Guna.UI2.WinForms.Guna2DataGridView();
             this._status = new System.Windows.Forms.Label();
+            this._pageHeader.SuspendLayout();
             this._toolbar.SuspendLayout();
-            this._gridHost.SuspendLayout();
+            this._card.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this._grid)).BeginInit();
             this.SuspendLayout();
             //
-            this._heading.AutoSize = true;
-            this._heading.BackColor = System.Drawing.Color.Transparent;
-            this._heading.Dock = System.Windows.Forms.DockStyle.Top;
-            this._heading.Font = new System.Drawing.Font("Segoe UI", 15F, System.Drawing.FontStyle.Bold);
-            this._heading.Padding = new System.Windows.Forms.Padding(2, 2, 0, 6);
-            this._heading.Name = "_heading";
-            this._heading.Size = new System.Drawing.Size(90, 35);
-            this._heading.Text = "Personel";
+            // _pageHeader
+            //
+            this._pageHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this._pageHeader.Height = 84;
+            this._pageHeader.Name = "_pageHeader";
+            this._pageHeader.Padding = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this._pageHeader.Controls.Add(this._subtitle);
+            this._pageHeader.Controls.Add(this._title);
+            //
+            // _title
+            //
+            this._title.AutoSize = true;
+            this._title.BackColor = System.Drawing.Color.Transparent;
+            this._title.Font = new System.Drawing.Font("Segoe UI", 15.5F, System.Drawing.FontStyle.Bold);
+            this._title.Location = new System.Drawing.Point(4, 14);
+            this._title.Name = "_title";
+            this._title.Size = new System.Drawing.Size(96, 28);
+            this._title.TabIndex = 0;
+            this._title.Text = "Personel";
+            //
+            // _subtitle
+            //
+            this._subtitle.AutoSize = true;
+            this._subtitle.BackColor = System.Drawing.Color.Transparent;
+            this._subtitle.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this._subtitle.Location = new System.Drawing.Point(6, 48);
+            this._subtitle.Name = "_subtitle";
+            this._subtitle.Size = new System.Drawing.Size(360, 15);
+            this._subtitle.TabIndex = 1;
+            this._subtitle.Tag = "muted";
+            this._subtitle.Text = "Personel hesapları yalnızca buradan açılır. Pasif hesap giriş yapamaz.";
+            //
+            // _headerDivider
+            //
+            this._headerDivider.Dock = System.Windows.Forms.DockStyle.Top;
+            this._headerDivider.Height = 1;
+            this._headerDivider.Name = "_headerDivider";
+            this._headerDivider.Tag = "divider";
+            //
+            // _toolbar
             //
             this._toolbar.Dock = System.Windows.Forms.DockStyle.Top;
-            this._toolbar.Height = 52;
-            this._toolbar.Padding = new System.Windows.Forms.Padding(0, 6, 0, 6);
+            this._toolbar.Height = 58;
             this._toolbar.Name = "_toolbar";
+            this._toolbar.Padding = new System.Windows.Forms.Padding(0, 12, 0, 8);
+            this._toolbar.WrapContents = false;
             this._toolbar.Controls.Add(this._add);
             this._toolbar.Controls.Add(this._edit);
             this._toolbar.Controls.Add(this._toggle);
             this._toolbar.Controls.Add(this._reset);
             //
-            this._add.BorderRadius = 8;
-            this._add.Size = new System.Drawing.Size(140, 38);
+            // _add
+            //
+            this._add.BorderRadius = 10;
+            this._add.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold);
+            this._add.ForeColor = System.Drawing.Color.White;
+            this._add.Margin = new System.Windows.Forms.Padding(0, 0, 10, 0);
             this._add.Name = "_add";
+            this._add.Size = new System.Drawing.Size(140, 38);
+            this._add.TabIndex = 0;
             this._add.Text = "Yeni personel";
-            this._edit.BorderRadius = 8;
-            this._edit.Size = new System.Drawing.Size(100, 38);
+            //
+            // _edit
+            //
+            this._edit.BorderRadius = 10;
+            this._edit.Margin = new System.Windows.Forms.Padding(0, 0, 10, 0);
             this._edit.Name = "_edit";
+            this._edit.Size = new System.Drawing.Size(100, 38);
+            this._edit.TabIndex = 1;
             this._edit.Tag = "secondary";
             this._edit.Text = "Düzenle";
-            this._toggle.BorderRadius = 8;
-            this._toggle.Size = new System.Drawing.Size(120, 38);
+            //
+            // _toggle
+            //
+            this._toggle.BorderRadius = 10;
+            this._toggle.Margin = new System.Windows.Forms.Padding(0, 0, 10, 0);
             this._toggle.Name = "_toggle";
+            this._toggle.Size = new System.Drawing.Size(120, 38);
+            this._toggle.TabIndex = 2;
             this._toggle.Tag = "secondary";
-            this._toggle.Text = "Aktif/Pasif";
-            this._reset.BorderRadius = 8;
-            this._reset.Size = new System.Drawing.Size(130, 38);
+            this._toggle.Text = "Aktif / Pasif";
+            //
+            // _reset
+            //
+            this._reset.BorderRadius = 10;
+            this._reset.Margin = new System.Windows.Forms.Padding(0);
             this._reset.Name = "_reset";
+            this._reset.Size = new System.Drawing.Size(130, 38);
+            this._reset.TabIndex = 3;
             this._reset.Tag = "secondary";
             this._reset.Text = "Parola sıfırla";
             //
-            this._gridHost.Dock = System.Windows.Forms.DockStyle.Fill;
-            this._gridHost.Padding = new System.Windows.Forms.Padding(0, 8, 0, 8);
-            this._gridHost.Name = "_gridHost";
-            this._gridHost.Controls.Add(this._grid);
+            // _card
+            //
+            this._card.Dock = System.Windows.Forms.DockStyle.Fill;
+            this._card.Name = "_card";
+            this._card.Padding = new System.Windows.Forms.Padding(2);
+            this._card.Tag = "card";
+            this._card.Controls.Add(this._grid);
+            //
+            // _grid
             //
             this._grid.AllowUserToAddRows = false;
             this._grid.AllowUserToDeleteRows = false;
             this._grid.AllowUserToResizeRows = false;
             this._grid.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this._grid.BackgroundColor = System.Drawing.Color.FromArgb(28, 28, 36);
             this._grid.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this._grid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             this._grid.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -80,37 +144,49 @@ namespace PwdManager.WinForms.Forms.Admin
             this._grid.Name = "_grid";
             this._grid.ReadOnly = true;
             this._grid.RowHeadersVisible = false;
-            this._grid.RowTemplate.Height = 36;
+            this._grid.RowTemplate.Height = 42;
             this._grid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
+            this._grid.TabIndex = 0;
+            //
+            // _status
             //
             this._status.BackColor = System.Drawing.Color.Transparent;
             this._status.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this._status.Font = new System.Drawing.Font("Segoe UI", 9.75F);
-            this._status.Height = 22;
+            this._status.Font = new System.Drawing.Font("Segoe UI", 8.5F);
+            this._status.Height = 30;
             this._status.Name = "_status";
+            this._status.Padding = new System.Windows.Forms.Padding(4, 8, 4, 4);
+            this._status.TabIndex = 3;
+            //
+            // PersonnelView
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this._gridHost);
+            this.Controls.Add(this._card);
             this.Controls.Add(this._toolbar);
-            this.Controls.Add(this._heading);
+            this.Controls.Add(this._headerDivider);
+            this.Controls.Add(this._pageHeader);
             this.Controls.Add(this._status);
             this.Name = "PersonnelView";
-            this.Size = new System.Drawing.Size(820, 520);
+            this.Size = new System.Drawing.Size(937, 693);
+            this._pageHeader.ResumeLayout(false);
+            this._pageHeader.PerformLayout();
             this._toolbar.ResumeLayout(false);
-            this._gridHost.ResumeLayout(false);
+            this._card.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this._grid)).EndInit();
             this.ResumeLayout(false);
-            this.PerformLayout();
         }
 
-        private System.Windows.Forms.Label _heading;
+        private Guna.UI2.WinForms.Guna2Panel _pageHeader;
+        private System.Windows.Forms.Label _title;
+        private System.Windows.Forms.Label _subtitle;
+        private Guna.UI2.WinForms.Guna2Panel _headerDivider;
         private System.Windows.Forms.FlowLayoutPanel _toolbar;
         private Guna.UI2.WinForms.Guna2Button _add;
         private Guna.UI2.WinForms.Guna2Button _edit;
         private Guna.UI2.WinForms.Guna2Button _toggle;
         private Guna.UI2.WinForms.Guna2Button _reset;
-        private System.Windows.Forms.Panel _gridHost;
+        private Guna.UI2.WinForms.Guna2Panel _card;
         private Guna.UI2.WinForms.Guna2DataGridView _grid;
         private System.Windows.Forms.Label _status;
     }

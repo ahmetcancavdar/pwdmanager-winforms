@@ -28,6 +28,8 @@ public partial class PwdManagerContext : DbContext
 
     public virtual DbSet<SecretPermission> SecretPermissions { get; set; }
 
+    public virtual DbSet<SecretRevealLock> SecretRevealLocks { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -303,6 +305,38 @@ public partial class PwdManagerContext : DbContext
             entity.HasOne(d => d.User).WithMany(p => p.SecretDenyUsers)
                 .HasForeignKey(d => d.UserId)
                 .HasConstraintName("fk_sd_user");
+        });
+
+        modelBuilder.Entity<SecretRevealLock>(entity =>
+        {
+            entity.HasKey(e => new { e.UserId, e.SecretId })
+                .HasName("PRIMARY")
+                .HasAnnotation("MySql:IndexPrefixLength", new[] { 0, 0 });
+
+            entity.ToTable("secret_reveal_locks");
+
+            entity.Property(e => e.UserId)
+                .HasColumnType("bigint(20)")
+                .HasColumnName("user_id");
+            entity.Property(e => e.SecretId)
+                .HasColumnType("bigint(20)")
+                .HasColumnName("secret_id");
+            entity.Property(e => e.FailedCount)
+                .HasColumnType("int(11)")
+                .HasColumnName("failed_count");
+            entity.Property(e => e.LockedUntil)
+                .HasColumnType("datetime")
+                .HasColumnName("locked_until");
+
+            entity.HasOne<User>().WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_srl_user");
+
+            entity.HasOne<Secret>().WithMany()
+                .HasForeignKey(e => e.SecretId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("fk_srl_secret");
         });
 
         modelBuilder.Entity<SecretPermission>(entity =>

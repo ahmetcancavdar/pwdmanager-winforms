@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddSingleton<IPermissionRepository, PermissionRepository>();
         services.AddSingleton<IAuditRepository, AuditRepository>();
         services.AddSingleton<IAppMetaRepository, AppMetaRepository>();
+        services.AddSingleton<IRevealLockRepository, RevealLockRepository>();
 
         services.AddSingleton<IPasswordHasher, Argon2PasswordHasher>();
         services.AddSingleton<IKeyDerivation, Argon2KeyDerivation>();

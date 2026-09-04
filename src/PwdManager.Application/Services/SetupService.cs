@@ -7,7 +7,15 @@ using PwdManager.Domain.Security;
 
 namespace PwdManager.Application.Services;
 
+
+
 /// <summary>
+/// 1. Sistemin ana şifreleme anahtarını üretir: DEK
+/// 2. İlk admin kullanıcısını oluşturur
+///3.Admin parolasıyla DEK'i sarar: WrappedDek
+///4. Kurtarma kodu üretir
+///5. Aynı DEK'i recovery code ile de sarar
+///6. Recovery bilgilerini app_meta tablosuna kaydeder
 /// One-time initialisation: generates the system DEK, creates the first admin with a
 /// password-wrapped copy of it, and stores a recovery-code-wrapped copy for disaster recovery.
 /// </summary>
@@ -36,6 +44,8 @@ public sealed class SetupService
     public async Task<Result> CreateFirstAdminAsync(
         string username, string password, string fullName, CancellationToken ct = default)
     {
+        PasswordPolicy.Ensure(password);
+
         byte[] dek = _crypto.NewDataKey();
         try
         {

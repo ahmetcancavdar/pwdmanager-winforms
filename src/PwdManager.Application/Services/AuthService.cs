@@ -59,7 +59,9 @@ public sealed class AuthService
         if (!_hasher.Verify(password, user.PasswordHash))
         {
             int failed = user.FailedLoginCount + 1;
-            DateTime? newLock = failed >= _security.LoginMaxAttempts ? DateTime.UtcNow.AddMinutes(15) : null;
+            DateTime? newLock = failed >= _security.LoginMaxAttempts
+                ? DateTime.UtcNow.AddMinutes(_security.LockoutMinutes)
+                : null;
             await _users.RegisterFailedLoginAsync(user.Id, failed, newLock, ct);
             await _audit.WriteAsync(AuditAction.LoginFailed, user.Id, user.Username, detail: $"attempt {failed}", ct: ct);
             return new LoginOutcome(LoginStatus.InvalidCredentials, null, newLock);
@@ -140,11 +142,16 @@ public sealed class AuthService
     public async Task ChangePasswordAsync(SessionContext session, string currentPassword, string newPassword,
         CancellationToken ct = default)
     {
+        PasswordPolicy.Ensure(newPassword);
+
         var user = await _users.GetByIdAsync(session.User.Id, ct)
                    ?? throw new InvalidOperationException("Kullanıcı bulunamadı.");
 
         if (!_hasher.Verify(currentPassword, user.PasswordHash))
             throw new InvalidOperationException("Mevcut parola hatalı.");
+
+        if (newPassword == currentPassword)
+            throw new InvalidOperationException("Yeni parola eskisiyle aynı olamaz.");
 
         byte[] oldKek = _kdf.DeriveKey(currentPassword, user.KdfSalt);
         byte[] dek;

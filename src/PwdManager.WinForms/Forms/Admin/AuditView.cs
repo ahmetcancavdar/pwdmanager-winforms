@@ -21,6 +21,8 @@ public sealed partial class AuditView : UserControl, IAdminView
         ThemeManager.Apply(this);
         Dock = DockStyle.Fill;
 
+        UiFactory.SetIcon(_refresh, IconFont.Refresh);
+
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "When", HeaderText = "Zaman", FillWeight = 18 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "User", HeaderText = "Kullanıcı", FillWeight = 16 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Action", HeaderText = "İşlem", FillWeight = 20 });

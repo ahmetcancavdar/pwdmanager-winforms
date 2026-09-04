@@ -29,6 +29,10 @@ public sealed partial class TrashView : UserControl, IAdminView
         ThemeManager.Apply(this);
         Dock = DockStyle.Fill;
 
+        UiFactory.SetIcon(_restore, IconFont.Restore);
+        UiFactory.SetIcon(_purge, IconFont.Delete);
+        UiFactory.SetIcon(_refresh, IconFont.Refresh);
+
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Kind", HeaderText = "Tür", FillWeight = 14 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name", HeaderText = "Ad / Başlık", FillWeight = 34 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Category", HeaderText = "Kategori", FillWeight = 26 });

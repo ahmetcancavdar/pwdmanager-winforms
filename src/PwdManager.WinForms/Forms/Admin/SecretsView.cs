@@ -38,6 +38,10 @@ public sealed partial class SecretsView : UserControl, IAdminView
         ThemeManager.Apply(this);
         Dock = DockStyle.Fill;
 
+        UiFactory.SetIcon(_add, IconFont.Add);
+        UiFactory.SetIcon(_edit, IconFont.Edit);
+        UiFactory.SetIcon(_del, IconFont.Delete);
+
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Category", HeaderText = "Kategori", FillWeight = 22 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Title", HeaderText = "Başlık", FillWeight = 30 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Notes", HeaderText = "Not", FillWeight = 33 });

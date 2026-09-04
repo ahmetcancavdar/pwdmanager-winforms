@@ -37,9 +37,10 @@ namespace PwdManager.WinForms.Forms.Personnel
             //
             // _card
             //
-            this._card.BorderRadius = 8;
+            this._card.BorderRadius = 10;
             this._card.Dock = System.Windows.Forms.DockStyle.Fill;
             this._card.Name = "_card";
+            this._card.Tag = "row";
             this._card.Controls.Add(this._top);
             this._card.Controls.Add(this._bottom);
             //
@@ -70,7 +71,7 @@ namespace PwdManager.WinForms.Forms.Personnel
             //
             this._title.AutoSize = true;
             this._title.BackColor = System.Drawing.Color.Transparent;
-            this._title.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold);
+            this._title.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this._title.Location = new System.Drawing.Point(16, 15);
             this._title.Name = "_title";
             //
@@ -97,24 +98,24 @@ namespace PwdManager.WinForms.Forms.Personnel
             // buttons
             //
             this._action.BorderRadius = 8;
-            this._action.Size = new System.Drawing.Size(74, 30);
+            this._action.Size = new System.Drawing.Size(94, 32);
             this._action.Name = "_action";
             this._action.Tag = "secondary";
             this._action.Text = "Göster";
             //
             this._ok.BorderRadius = 8;
-            this._ok.Size = new System.Drawing.Size(92, 34);
+            this._ok.Size = new System.Drawing.Size(96, 34);
             this._ok.Name = "_ok";
             this._ok.Text = "Onayla";
             //
             this._cancel.BorderRadius = 8;
-            this._cancel.Size = new System.Drawing.Size(70, 34);
+            this._cancel.Size = new System.Drawing.Size(78, 34);
             this._cancel.Name = "_cancel";
             this._cancel.Tag = "secondary";
             this._cancel.Text = "İptal";
             //
             this._hide.BorderRadius = 8;
-            this._hide.Size = new System.Drawing.Size(70, 34);
+            this._hide.Size = new System.Drawing.Size(78, 34);
             this._hide.Name = "_hide";
             this._hide.Tag = "secondary";
             this._hide.Text = "Gizle";

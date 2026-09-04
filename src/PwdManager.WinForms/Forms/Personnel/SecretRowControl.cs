@@ -12,6 +12,10 @@ namespace PwdManager.WinForms.Forms.Personnel;
 /// login password right here — no popup — and on success the credential is shown for
 /// a few seconds, with a per-second access re-check that hides it instantly if the
 /// admin revokes access. (Layout is bespoke — see <see cref="LayoutRow"/>.)
+///
+/// Failed re-auth attempts for this secret are tracked server-side (per user+secret,
+/// in the database) — collapsing the row, refreshing the list, or reopening the app
+/// does not reset the counter or lift the lock.
 /// </summary>
 public sealed partial class SecretRowControl : UserControl
 {
@@ -23,11 +27,8 @@ public sealed partial class SecretRowControl : UserControl
     private readonly SessionContext _session = null!;
     private readonly long _secretId;
 
-    private int _maxAttempts = 3;
     private int _visibleSeconds = 20;
     private int _remaining;
-    private int _attempts;
-    private bool _locked;
     private bool _busy;
 
     private const string MaskedUser = "kullanıcı: ••••";
@@ -45,7 +46,6 @@ public sealed partial class SecretRowControl : UserControl
         _auth = provider.GetRequiredService<AuthService>();
         _session = session;
         var security = provider.GetRequiredService<SecurityConfig>();
-        _maxAttempts = Math.Max(1, security.RevealMaxAttempts);
         _visibleSeconds = Math.Max(3, security.RevealVisibleSeconds);
         _secretId = secretId;
 
@@ -56,7 +56,7 @@ public sealed partial class SecretRowControl : UserControl
         BackColor = AppPalette.Background;
         Margin = new Padding(0, 0, 0, 6);
 
-        _action.Click += (_, _) => TogglePrompt();
+        _action.Click += async (_, _) => await TogglePromptAsync();
         _ok.Click += (_, _) => _ = SubmitAsync();
         _cancel.Click += (_, _) => Collapse();
         _hide.Click += (_, _) => Collapse();
@@ -67,7 +67,7 @@ public sealed partial class SecretRowControl : UserControl
         _timer.Tick += async (_, _) => await OnTickAsync();
 
         foreach (Control c in new Control[] { this, _card, _top, _title, _user, _mask })
-            c.DoubleClick += (_, _) => TogglePrompt();
+            c.DoubleClick += async (_, _) => await TogglePromptAsync();
 
         Size = new Size(900, CollapsedHeight);
         LayoutRow();
@@ -96,29 +96,54 @@ public sealed partial class SecretRowControl : UserControl
         _status.Location = new Point(16, 46);
     }
 
-    private void TogglePrompt()
+    /// <summary>
+    /// Opens (or closes) the reveal prompt. On open, re-checks the server-side reveal
+    /// lock every time — so this can never be bypassed by collapsing/reopening the row,
+    /// refreshing the live list, or restarting the app.
+    /// </summary>
+    private async Task TogglePromptAsync()
     {
-        if (_locked) return;
+        if (_busy) return;
         if (_bottom.Visible) { Collapse(); return; }
 
-        _bottom.Visible = true;
-        Height = ExpandedHeight;
-        _pass.Visible = true;
-        _pass.ReadOnly = false;
-        _pass.Enabled = true;
-        UiFactory.SetPasswordVisible(_pass, false);
-        _pass.Text = "";
-        _pass.PlaceholderText = "Giriş parolan";
-        _ok.Visible = true;
-        _cancel.Visible = true;
-        _hide.Visible = false;
-        _status.Text = _attempts > 0
-            ? $"Kalan deneme: {_maxAttempts - _attempts}"
-            : "Şifreyi görmek için giriş parolanı gir.";
-        _status.ForeColor = AppPalette.TextSecondary;
-        _action.Text = "Kapat";
-        LayoutRow();
-        _pass.Focus();
+        _busy = true;
+        try
+        {
+            DateTime? lockedUntil = await _secrets.GetRevealLockAsync(_session, _secretId);
+            if (IsDisposed) return;
+
+            _bottom.Visible = true;
+            Height = ExpandedHeight;
+
+            if (lockedUntil is { } lu)
+            {
+                ShowLocked(lu);
+                return;
+            }
+
+            _pass.Visible = true;
+            _pass.ReadOnly = false;
+            _pass.Enabled = true;
+            UiFactory.SetPasswordVisible(_pass, false);
+            _pass.Text = "";
+            _pass.PlaceholderText = "Giriş parolan";
+            _ok.Visible = true;
+            _cancel.Visible = true;
+            _hide.Visible = false;
+            _status.Text = "Şifreyi görmek için giriş parolanı gir.";
+            _status.ForeColor = AppPalette.TextSecondary;
+            _action.Text = "Kapat";
+            LayoutRow();
+            _pass.Focus();
+        }
+        catch (Exception ex)
+        {
+            if (!IsDisposed) { _status.Text = "Hata: " + ex.Message; _status.ForeColor = AppPalette.Danger; }
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     private async Task SubmitAsync()
@@ -134,20 +159,18 @@ public sealed partial class SecretRowControl : UserControl
 
             if (!valid)
             {
-                _attempts++;
-                if (_attempts >= _maxAttempts)
+                var (remaining, lockedUntil) = await _secrets.RegisterRevealFailureAsync(_session, _secretId);
+                if (IsDisposed) return;
+
+                if (lockedUntil is { } lu)
                 {
-                    _locked = true;
-                    _pass.Visible = false;
-                    _ok.Visible = _cancel.Visible = _hide.Visible = false;
-                    _status.Text = "Çok fazla hatalı deneme. Bu kayıt için görüntüleme kilitlendi.";
-                    _status.ForeColor = AppPalette.Danger;
-                    _action.Enabled = false;
+                    ShowLocked(lu);
                     return;
                 }
+
                 _pass.Enabled = true;
                 _pass.Text = "";
-                _status.Text = $"Parola hatalı. Kalan deneme: {_maxAttempts - _attempts}";
+                _status.Text = $"Parola hatalı. Kalan deneme: {remaining}";
                 _status.ForeColor = AppPalette.Danger;
                 _pass.Focus();
                 return;
@@ -166,6 +189,9 @@ public sealed partial class SecretRowControl : UserControl
                 return;
             }
 
+            await _secrets.ClearRevealLockAsync(_session, _secretId);
+            if (IsDisposed) return;
+
             ShowRevealed(revealed.Username, revealed.Password);
         }
         catch (Exception ex)
@@ -179,6 +205,18 @@ public sealed partial class SecretRowControl : UserControl
             _busy = false;
             _ok.Enabled = true;
         }
+    }
+
+    /// <summary>Shows the "too many attempts" state; the row can still be closed via "Kapat".</summary>
+    private void ShowLocked(DateTime lockedUntilUtc)
+    {
+        _pass.Visible = false;
+        _ok.Visible = _cancel.Visible = false;
+        _hide.Visible = true;
+        _status.Text = $"Çok fazla hatalı deneme. {lockedUntilUtc.ToLocalTime():HH:mm}'e kadar bu kayda bakamazsınız.";
+        _status.ForeColor = AppPalette.Danger;
+        _action.Text = "Kapat";
+        LayoutRow();
     }
 
     private void ShowRevealed(string username, string password)

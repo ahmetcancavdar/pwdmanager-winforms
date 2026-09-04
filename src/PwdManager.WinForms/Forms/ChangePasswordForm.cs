@@ -51,7 +51,7 @@ public sealed partial class ChangePasswordForm : Form
 
     private async Task SaveAsync()
     {
-        if (_new.Text.Length < 10) { SetStatus("Yeni parola en az 10 karakter olmalı.", true); return; }
+        if (!PasswordPolicy.IsValid(_new.Text, out string pwError)) { SetStatus(pwError, true); return; }
         if (_new.Text != _confirm.Text) { SetStatus("Parolalar eşleşmiyor.", true); return; }
         if (_new.Text == _current.Text) { SetStatus("Yeni parola eskisiyle aynı olamaz.", true); return; }
 

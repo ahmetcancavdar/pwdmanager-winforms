@@ -85,6 +85,27 @@ public interface IPermissionRepository
     Task BumpSyncVersionAsync(long userId, CancellationToken ct = default);
 }
 
+/// <summary>
+/// Per (user, secret) reveal re-authentication attempt tracking — independent of the
+/// account-wide login lockout. Survives UI refresh/restart because it lives in the DB.
+/// </summary>
+public interface IRevealLockRepository
+{
+    /// <summary>Current failure count and lock deadline (if any) for this user+secret.</summary>
+    Task<(int FailedCount, DateTime? LockedUntil)> GetAsync(long userId, long secretId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Records one more failed re-auth attempt. If an existing lock has already
+    /// expired the counter starts a fresh window. Once <paramref name="maxAttempts"/>
+    /// is reached, locks for <paramref name="lockoutMinutes"/> from now.
+    /// </summary>
+    Task<(int FailedCount, DateTime? LockedUntil)> RegisterFailureAsync(
+        long userId, long secretId, int maxAttempts, int lockoutMinutes, CancellationToken ct = default);
+
+    /// <summary>Clears the counter/lock — called after a successful re-auth.</summary>
+    Task ClearAsync(long userId, long secretId, CancellationToken ct = default);
+}
+
 public interface IAuditRepository
 {
     Task WriteAsync(string action, long? userId, string username,

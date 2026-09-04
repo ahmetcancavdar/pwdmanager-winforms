@@ -26,6 +26,10 @@ public sealed partial class CategoriesView : UserControl, IAdminView
         ThemeManager.Apply(this);
         Dock = DockStyle.Fill;
 
+        UiFactory.SetIcon(_add, IconFont.Add);
+        UiFactory.SetIcon(_edit, IconFont.Edit);
+        UiFactory.SetIcon(_del, IconFont.Delete);
+
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Name", HeaderText = "Ad", FillWeight = 30 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Description", HeaderText = "Açıklama", FillWeight = 45 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Count", HeaderText = "Parola", FillWeight = 12 });

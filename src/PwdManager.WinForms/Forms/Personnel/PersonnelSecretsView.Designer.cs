@@ -21,7 +21,8 @@ namespace PwdManager.WinForms.Forms.Personnel
             this._list.Dock = System.Windows.Forms.DockStyle.Fill;
             this._list.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this._list.Name = "_list";
-            this._list.Padding = new System.Windows.Forms.Padding(4, 4, 4, 12);
+            this._list.Padding = new System.Windows.Forms.Padding(8, 6, 8, 14);
+            this._list.Tag = "surface";
             this._list.WrapContents = false;
             //
             // PersonnelSecretsView

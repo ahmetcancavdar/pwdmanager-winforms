@@ -133,6 +133,24 @@ CREATE TABLE IF NOT EXISTS `secret_denies` (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------------
+-- secret_reveal_locks: per (personel, parola) reveal re-authentication attempts.
+-- 3 hatalı giriş parolası denemesinden sonra o parola için 5 dk kilit uygulanır.
+-- Sunucu tarafında (DB) tutulur ki arayüz yenilense/pencere kapatılıp açılsa bile
+-- kilit atlanamasın.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `secret_reveal_locks` (
+  `user_id`      BIGINT NOT NULL,
+  `secret_id`    BIGINT NOT NULL,
+  `failed_count` INT NOT NULL DEFAULT 0,
+  `locked_until` DATETIME NULL,
+  PRIMARY KEY (`user_id`, `secret_id`),
+  CONSTRAINT `fk_srl_user` FOREIGN KEY (`user_id`)
+    REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_srl_secret` FOREIGN KEY (`secret_id`)
+    REFERENCES `secrets` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------------
 -- permission_sync: bumped on every grant/revoke/deny for a user. The personnel
 -- client polls this cheap value; a change means "rebuild my visible list".
 -- ---------------------------------------------------------------------------

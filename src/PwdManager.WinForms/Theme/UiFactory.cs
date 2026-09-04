@@ -5,6 +5,20 @@ namespace PwdManager.WinForms.Theme;
 /// <summary>Factory helpers for consistently styled Guna2 controls (dark theme).</summary>
 public static class UiFactory
 {
+    /// <summary>
+    /// Puts a monochrome icon-font glyph on the left of a button and pads the caption.
+    /// Colour follows the button role (primary → white, secondary → grey).
+    /// </summary>
+    public static void SetIcon(Guna2Button button, string glyph, int size = 16)
+    {
+        bool secondary = (button.Tag as string) == "secondary";
+        button.Image = IconFont.Render(glyph, size,
+            secondary ? AppPalette.TextSecondary : AppPalette.TextOnPrimary);
+        button.ImageAlign = System.Windows.Forms.HorizontalAlignment.Left;
+        button.ImageOffset = new Point(6, 0);
+        button.Text = "    " + button.Text.Trim();
+    }
+
     public static Guna2Button PrimaryButton(string text, int width = 120, int height = 40)
     {
         var b = new Guna2Button

@@ -5,10 +5,14 @@ using WinFormsApp = System.Windows.Forms.Application;
 namespace PwdManager.WinForms.Forms;
 
 /// <summary>
-/// Shared chrome for the role shells (top bar with identity + logout + "new window",
-/// and a <see cref="Content"/> host). Disposes the session on close and locks back to
+/// Shared chrome for the role shells (top bar with identity + logout, and a
+/// <see cref="Content"/> host). Disposes the session on close and locks back to
 /// login after a period with no user input. The chrome layout lives in the designer;
 /// this file wires behaviour.
+///
+/// There is no single-instance lock — launching the desktop shortcut again always
+/// starts an independent process with its own login screen, so two people (or two
+/// accounts) can use the app on the same machine at once.
 /// </summary>
 // Not abstract: the WinForms designer cannot open a form whose base type is abstract.
 // It is still never instantiated directly — only via AdminShellForm / PersonnelShellForm.
@@ -42,12 +46,18 @@ public partial class ShellFormBase : Form, IShellForm, IMessageFilter
     {
         InitializeComponent();
         ThemeManager.Apply(this);
+        AppBranding.ApplyBrand(_brandDot);
 
         _idleTimeout = TimeSpan.FromMinutes(Math.Max(1, idleLockMinutes));
         Text = $"PwdManager — {roleCaption}";
 
-        _logoutButton.Click += (_, _) => Close();
-        _newWindowButton.Click += (_, _) => LaunchNewInstance();
+        _logoutButton.Click += (_, _) =>
+        {
+            var result = MessageBox.Show(this, "Çıkış yapmak istediğinizden emin misiniz?",
+                "Çıkış yap", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+            if (result == DialogResult.Yes)
+                Close();
+        };
 
         _idleTimer = new System.Windows.Forms.Timer { Interval = 15_000 };
         _idleTimer.Tick += (_, _) =>
@@ -77,19 +87,12 @@ public partial class ShellFormBase : Form, IShellForm, IMessageFilter
             Close();
     }
 
-    /// <summary>Starts a second, fully independent copy of the app (for a parallel account).</summary>
-    public static void LaunchNewInstance()
+    protected override void OnLoad(EventArgs e)
     {
-        try
-        {
-            string exe = WinFormsApp.ExecutablePath;
-            if (!string.IsNullOrEmpty(exe))
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = true });
-        }
-        catch
-        {
-            // best effort; nothing to recover
-        }
+        base.OnLoad(e);
+        // Derived shells call ThemeManager.Apply again in their own ctor, which repaints
+        // the brand square — so re-apply the logo once the whole ctor chain is done.
+        AppBranding.ApplyBrand(_brandDot);
     }
 
     protected override void OnHandleCreated(EventArgs e)

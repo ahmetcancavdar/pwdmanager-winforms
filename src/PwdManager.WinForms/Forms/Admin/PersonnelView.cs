@@ -26,6 +26,11 @@ public sealed partial class PersonnelView : UserControl, IAdminView
         ThemeManager.Apply(this);
         Dock = DockStyle.Fill;
 
+        UiFactory.SetIcon(_add, IconFont.Add);
+        UiFactory.SetIcon(_edit, IconFont.Edit);
+        UiFactory.SetIcon(_toggle, IconFont.Toggle);
+        UiFactory.SetIcon(_reset, IconFont.Refresh);
+
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Username", HeaderText = "Kullanıcı adı", FillWeight = 22 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "FullName", HeaderText = "Ad soyad", FillWeight = 30 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Status", HeaderText = "Durum", FillWeight = 14 });

@@ -26,4 +26,17 @@
     </None>
   </ItemGroup>
 
+  <!-- Any file dropped into Assets\ is copied next to the exe (logo.png / logo.ico). -->
+  <ItemGroup>
+    <None Include="Assets\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+  <!-- Sets the exe / taskbar icon when Assets\logo.ico exists (optional). -->
+  <PropertyGroup Condition="Exists('Assets\logo.ico')">
+    <ApplicationIcon>Assets\logo.ico</ApplicationIcon>
+  </PropertyGroup>
+
 </Project>

@@ -1,3 +1,4 @@
+using PwdManager.Application.Configuration;
 using PwdManager.Application.Interfaces;
 using PwdManager.Application.Models;
 using PwdManager.Domain.Security;
@@ -15,14 +16,18 @@ public sealed class SecretService
     private readonly IPermissionRepository _permissions;
     private readonly IUserRepository _users;
     private readonly IAuditRepository _audit;
+    private readonly IRevealLockRepository _revealLocks;
+    private readonly SecurityConfig _security;
 
     public SecretService(ISecretRepository secrets, IPermissionRepository permissions,
-        IUserRepository users, IAuditRepository audit)
+        IUserRepository users, IAuditRepository audit, IRevealLockRepository revealLocks, SecurityConfig security)
     {
         _secrets = secrets;
         _permissions = permissions;
         _users = users;
         _audit = audit;
+        _revealLocks = revealLocks;
+        _security = security;
     }
 
     public async Task<long> AddAsync(SessionContext s, long categoryId, string title,
@@ -106,5 +111,46 @@ public sealed class SecretService
         };
         await _audit.WriteAsync(AuditAction.SecretView, s.User.Id, s.User.Username, "secret", secretId, entity.Title, ct);
         return revealed;
+    }
+
+    /// <summary>
+    /// Reveal re-authentication lockout for this personnel + this specific secret,
+    /// independent of the account-wide login lockout. Kept in the database so it
+    /// cannot be bypassed by refreshing the list or reopening the row.
+    /// </summary>
+    public async Task<DateTime?> GetRevealLockAsync(SessionContext s, long secretId, CancellationToken ct = default)
+    {
+        if (s.IsAdmin) return null;
+        var (_, lockedUntil) = await _revealLocks.GetAsync(s.User.Id, secretId, ct);
+        return lockedUntil is { } lu && lu > DateTime.UtcNow ? lu : null;
+    }
+
+    /// <summary>
+    /// Records one failed reveal re-auth attempt. Returns the remaining attempts, or
+    /// (0, lockedUntil) once <see cref="SecurityConfig.RevealMaxAttempts"/> is reached.
+    /// </summary>
+    public async Task<(int RemainingAttempts, DateTime? LockedUntil)> RegisterRevealFailureAsync(
+        SessionContext s, long secretId, CancellationToken ct = default)
+    {
+        if (s.IsAdmin) return (int.MaxValue, null);
+
+        var (failedCount, lockedUntil) = await _revealLocks.RegisterFailureAsync(
+            s.User.Id, secretId, _security.RevealMaxAttempts, _security.RevealLockoutMinutes, ct);
+
+        if (lockedUntil is { } lu && lu > DateTime.UtcNow)
+        {
+            await _audit.WriteAsync(AuditAction.RevealAuthFailed, s.User.Id, s.User.Username, "secret", secretId,
+                detail: $"locked {_security.RevealLockoutMinutes}dk", ct: ct);
+            return (0, lu);
+        }
+
+        return (Math.Max(0, _security.RevealMaxAttempts - failedCount), null);
+    }
+
+    /// <summary>Clears the reveal-lock counter after a successful re-auth.</summary>
+    public async Task ClearRevealLockAsync(SessionContext s, long secretId, CancellationToken ct = default)
+    {
+        if (s.IsAdmin) return;
+        await _revealLocks.ClearAsync(s.User.Id, secretId, ct);
     }
 }

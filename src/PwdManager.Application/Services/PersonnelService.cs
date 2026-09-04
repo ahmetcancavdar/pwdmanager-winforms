@@ -31,6 +31,7 @@ public sealed class PersonnelService
         string initialPassword, CancellationToken ct = default)
     {
         admin.EnsureAdmin();
+        PasswordPolicy.Ensure(initialPassword);
 
         byte[] salt = _kdf.NewSalt();
         byte[] kek = _kdf.DeriveKey(initialPassword, salt);
@@ -62,6 +63,7 @@ public sealed class PersonnelService
         CancellationToken ct = default)
     {
         admin.EnsureAdmin();
+        PasswordPolicy.Ensure(newInitialPassword);
 
         byte[] salt = _kdf.NewSalt();
         byte[] kek = _kdf.DeriveKey(newInitialPassword, salt);
