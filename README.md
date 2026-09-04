@@ -222,7 +222,7 @@ bağımsız bir kopyasını sarar; tüm admin parolaları kaybolursa sistemi kur
 ### Personel
 - Salt okunur. Yalnızca yetkilendirildiği parolaları, kategoriye göre gruplanmış tabloda görür
 - Bir kategoride hiçbir şeye erişemiyorsa o kategori listede hiç görünmez
-- Şifreyi görmek için satıra çift tıklar → satır yerinde açılır, giriş parolasını orada girer (3 hakkı vardır; aşınca o kayıt kilitlenir)
+- Şifreyi görmek için satıra çift tıklar → satır yerinde açılır, giriş parolasını orada girer (3 hakkı vardır; aşınca o kayıt 5 dakika kilitlenir — kilit veritabanında tutulur, sayfa yenilense veya uygulama yeniden başlatılsa da açılmaz)
 - Liste her ~2 sn'de bir yoklanır; **görünen küme değişmediyse arayüz yeniden çizilmez** (imza karşılaştırması), yalnızca gerçek değişimde render edilir
 - Hesap pasifleştirilmişse yoklama bunu görür ve oturumu kapatır
 - **Açık satır** her saniye izni + hesap durumunu yeniden sorgular: admin eş zamanlı olarak
@@ -305,7 +305,8 @@ sequenceDiagram
     Auth->>Auth: parolayı doğrula + DEK unwrap dene
     alt 3 hatalı deneme
         Auth->>Auth: audit REVEAL_AUTH_FAILED
-        Row-->>P: bu kayıt için görüntüleme kilitlendi
+        Row->>Sec: RegisterRevealFailureAsync (secret_reveal_locks tablosuna yazar)
+        Row-->>P: bu kayıt 5 dakika kilitlendi (DB'de kalıcı — yenilemek açmaz)
     else parola doğru
         Row->>Sec: RevealAsync(session, secretId)
         Sec->>Perm: CanViewSecretAsync
@@ -389,7 +390,7 @@ sequenceDiagram
 
 - [Program.cs](src/PwdManager.WinForms/Program.cs) — iki fazlı açılış: hazır değilse [SetupWizardForm](src/PwdManager.WinForms/Forms/SetupWizardForm.cs), sonra [LoginForm](src/PwdManager.WinForms/Forms/LoginForm.cs)
 - [LoginForm](src/PwdManager.WinForms/Forms/LoginForm.cs) → ilk girişte zorunlu [ChangePasswordForm](src/PwdManager.WinForms/Forms/ChangePasswordForm.cs) → role göre shell
-- **Admin shell** ([AdminShellForm](src/PwdManager.WinForms/Forms/AdminShellForm.cs)) — sol menü + görünümler: [Kategoriler](src/PwdManager.WinForms/Forms/Admin/CategoriesView.cs) · [Parolalar](src/PwdManager.WinForms/Forms/Admin/SecretsView.cs) · [Personel](src/PwdManager.WinForms/Forms/Admin/PersonnelView.cs) · [Yetkiler](src/PwdManager.WinForms/Forms/Admin/PermissionsView.cs) (kategori/parola ağacı, onay kutuları anlık yazar) · [Denetim](src/PwdManager.WinForms/Forms/Admin/AuditView.cs)
+- **Admin shell** ([AdminShellForm](src/PwdManager.WinForms/Forms/AdminShellForm.cs)) — giriş yapar yapmaz doğrudan **Yetkiler** sekmesi açık gelir (boş görünüm host'u yok); sol menü + görünümler: [Kategoriler](src/PwdManager.WinForms/Forms/Admin/CategoriesView.cs) · [Parolalar](src/PwdManager.WinForms/Forms/Admin/SecretsView.cs) · [Personel](src/PwdManager.WinForms/Forms/Admin/PersonnelView.cs) · [Yetkiler](src/PwdManager.WinForms/Forms/Admin/PermissionsView.cs) (kategori/parola ağacı, onay kutuları anlık yazar) · [Denetim](src/PwdManager.WinForms/Forms/Admin/AuditView.cs) · [Silinenler](src/PwdManager.WinForms/Forms/Admin/TrashView.cs)
 - **Personel shell** ([PersonnelShellForm](src/PwdManager.WinForms/Forms/PersonnelShellForm.cs)) — salt okunur, **kategoriye göre gruplanmış tablo** ([PersonnelSecretsView](src/PwdManager.WinForms/Forms/Personnel/PersonnelSecretsView.cs)): her kategori başlığı + sütun başlığı + satırlar ([SecretRowControl](src/PwdManager.WinForms/Forms/Personnel/SecretRowControl.cs)). Erişilebilir parolası olmayan kategori hiç görünmez. Satıra çift tıkla → **satır yerinde açılır**, popup yok: giriş parolanı orada gir → şifre gösterilir → 20 sn geri sayım → maskelenir. ~2 sn'de bir yoklama, görünen küme değişince yeniden çizer.
 
 ## Güvenlik önlemleri
@@ -398,10 +399,13 @@ sequenceDiagram
 - `appsettings.local.json`: DB parolası Windows DPAPI (CurrentUser) ile şifreli, git'e girmez
 - MySQL kullanıcısı en az yetkili olmalı: yalnız bu şemada `SELECT/INSERT/UPDATE/DELETE`
 - MySQL sunucusu yalnız özel ağ / `bind-address` ile sınırlandırılmalı
-- Başarısız girişte hesap kilidi (5 deneme → 15 dk); reveal'da 3 deneme → iptal
+- Başarısız girişte hesap kilidi (5 deneme → 10 dk, `LockoutMinutes`); yanlış kullanıcı adı/parola girişinde net bir hata mesajı gösterilir
+- Reveal'da 3 hatalı yeniden-doğrulama → o kayıt 5 dakika kilitlenir (`RevealLockoutMinutes`), kilit `secret_reveal_locks` tablosunda tutulur — istemci belleğinde değil, bu yüzden yenileme/yeniden başlatma ile atlatılamaz
+- Yeni parola belirlerken en az 10 karakter zorunlu ([PasswordPolicy](src/PwdManager.Domain/Security/PasswordPolicy.cs)), uyulmazsa arayüzde görünür uyarı çıkar
 - Açık parola diske/log'a yazılmaz; KEK/DEK kullanımı sonrası `CryptographicOperations.ZeroMemory`
 - `audit_log`: login, görüntüleme (+reddedilen), ekle/düzenle/sil, yetki ver/al kayıtları
 - Boşta otomatik kilit ([ShellFormBase](src/PwdManager.WinForms/Forms/ShellFormBase.cs)): `IdleLockMinutes` (varsayılan 5) boyunca giriş yoksa shell kapanır, DEK temizlenir, giriş ekranına dönülür
+- **Çıkış Yap** düğmesi önce onay kutusu gösterir ("Çıkmak istiyor musunuz?") — yanlışlıkla tıklamayla oturum kapanmaz
 - Servis katmanında `SessionContext.EnsureAdmin()` — personel oturumuyla yazma işlemi denenirse reddedilir (derinlemesine savunma)
 
 ## Geliştirme
